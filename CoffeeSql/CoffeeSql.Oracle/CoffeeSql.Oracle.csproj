@@ -44,6 +44,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="CodeFirst\OracleDDLTextGenerator.cs" />
     <Compile Include="DbContext\OracleDbContext.cs" />
     <Compile Include="EntityDesign\FieldDefSORT.cs" />
     <Compile Include="EntityDesign\FieldDef\AutoIncreaseAttribute.cs" />

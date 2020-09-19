@@ -30,17 +30,23 @@ namespace CoffeeSql.Core.QueryEngine
         {
             return DbContext.QueryExecutor.ExecuteDataTable(DbContext);
         }
-        public async Task<DataTable> ToDataTableAsync()
-        {
-            return await DbContext.QueryExecutor.ExecuteDataTableAsync(DbContext);
-        }
         public List<TEntity> ToList<TEntity>() where TEntity : class
         {
             return DbContext.QueryExecutor.ExecuteList<TEntity>(DbContext);
+        }
+
+        public async Task<DataSet> ToDataSetAsync()
+        {
+            return await DbContext.QueryExecutor.ExecuteDataSetAsync(DbContext);
+        }
+        public async Task<DataTable> ToDataTableAsync()
+        {
+            return await DbContext.QueryExecutor.ExecuteDataTableAsync(DbContext);
         }
         public async Task<List<TEntity>> ToListAsync<TEntity>() where TEntity : class
         {
             return await DbContext.QueryExecutor.ExecuteListAsync<TEntity>(DbContext);
         }
+        
     }
 }

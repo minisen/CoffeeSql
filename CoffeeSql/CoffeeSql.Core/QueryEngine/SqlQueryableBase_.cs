@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq.Expressions;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace CoffeeSql.Core.QueryEngine
 {
@@ -57,26 +58,14 @@ namespace CoffeeSql.Core.QueryEngine
             DbContext.TableName = TableAttribute.GetName(typeof(TEntity));
         }
 
-        /// <summary>
-        /// 查询生成符合当前条件的List结果集
-        /// </summary>
-        /// <returns></returns>
         public abstract List<TEntity> ToList();
-        /// <summary>
-        /// 查询生成符合当前条件的单个实体
-        /// </summary>
-        /// <returns></returns>
         public abstract TEntity ToOne();
-        /// <summary>
-        /// 查询出符合当前条件的数据条数
-        /// </summary>
-        /// <returns></returns>
         public abstract long Count();
-        /// <summary>
-        /// 查询是否有符合条件的记录数
-        /// </summary>
-        /// <param name="filter"></param>
-        /// <returns></returns>
         public abstract bool Any();
+
+        public abstract Task<List<TEntity>> ToListAsync();
+        public abstract Task<TEntity> ToOneAsync();
+        public abstract Task<long> CountAsync();
+        public abstract Task<bool> AnyAsync();
     }
 }

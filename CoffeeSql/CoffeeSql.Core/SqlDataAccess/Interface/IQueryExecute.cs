@@ -24,9 +24,11 @@ namespace CoffeeSql.Core.SqlDataAccess.Interface
         DataTable ExecuteDataTable(SqlDbContext DbContext);
         Task<DataTable> ExecuteDataTableAsync(SqlDbContext DbContext);
         DataSet ExecuteDataSet(SqlDbContext DbContext);
+        Task<DataSet> ExecuteDataSetAsync(SqlDbContext DbContext);
         List<Entity> ExecuteList<Entity>(SqlDbContext DbContext) where Entity : class;
         Task<List<Entity>> ExecuteListAsync<Entity>(SqlDbContext DbContext) where Entity : class;
         Entity ExecuteEntity<Entity>(SqlDbContext DbContext) where Entity : class;
+        Task<Entity> ExecuteEntityAsync<Entity>(SqlDbContext DbContext) where Entity : class;
 
     }
 }

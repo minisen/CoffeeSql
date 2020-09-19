@@ -26,5 +26,9 @@ namespace CoffeeSql.Core.QueryEngine
         {
             DbContext.QueryExecutor.ExecuteNonQuery(DbContext);
         }
+        public async Task DoneAsync()
+        {
+            await DbContext.QueryExecutor.ExecuteNonQueryAsync(DbContext);
+        }
     }
 }

@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq.Expressions;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace CoffeeSql.Core.QueryEngine
 {
@@ -41,6 +42,15 @@ namespace CoffeeSql.Core.QueryEngine
             this.DbContext.CommandTextGenerator.Update(_filter, _entity);
             
             int res = this.DbContext.QueryExecutor.ExecuteNonQuery(this.DbContext);
+            this.DbContext.DbCacheManager.Update(_entity, _filter, this.DbContext.CommandTextGenerator._columns);
+            return res;
+        }
+        public async Task<int> DoneAsync()
+        {
+            this.DbContext.CommandTextGenerator.SetColumns(_columns);
+            this.DbContext.CommandTextGenerator.Update(_filter, _entity);
+
+            int res = await this.DbContext.QueryExecutor.ExecuteNonQueryAsync(this.DbContext);
             this.DbContext.DbCacheManager.Update(_entity, _filter, this.DbContext.CommandTextGenerator._columns);
             return res;
         }

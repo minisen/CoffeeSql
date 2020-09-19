@@ -18,6 +18,7 @@ using System.Linq.Expressions;
 using System.Linq;
 using CoffeeSql.Core.Helpers;
 using CoffeeSql.Core.CodeFirst;
+using System.Threading.Tasks;
 
 //The type to be extended needs to add the corresponding assembly friend ID here
 [assembly: InternalsVisibleTo("CoffeeSql.Mysql")]
@@ -118,7 +119,10 @@ namespace CoffeeSql.Core.DbContexts
         /// <summary>
         /// Get Database Connection
         /// </summary>
-        internal abstract DbConnection GetDbConnection(string connectionString);
+        internal DbConnection GetDbConnection(string connectionString)
+        {
+            return CreateDbConnection(connectionString);
+        }
 
         /// <summary>
         /// Create Database Command
@@ -224,6 +228,24 @@ namespace CoffeeSql.Core.DbContexts
             DbCacheManager.Add(entity);
             return res;
         }
+        public override int Update<TEntity>(TEntity entity)
+        {
+            Expression<Func<TEntity, bool>> filter;
+
+            this.Parameters.Clear();
+            this.ConnectionManager.SetConnectionString(OperationType.Write);
+            this.DbConnection = this.GetDbConnection(this.ConnectionManager.CurrentConnectionString);
+            this.DbCommand.Connection = this.DbConnection;
+            this.DbCommand.CommandType = CommandType.Text;
+            this.CommandTextGenerator.Update(entity, out filter);
+            this.TableName = GetTableName<TEntity>();
+
+            this.DBTransaction.SyncCommandTransaction();
+
+            int res = this.QueryExecutor.ExecuteNonQuery(this);
+            DbCacheManager.Update(entity, filter);
+            return res;
+        }
         public override int Delete<TEntity>(Expression<Func<TEntity, bool>> filter)
         {
             this.Parameters.Clear();
@@ -240,7 +262,7 @@ namespace CoffeeSql.Core.DbContexts
             DbCacheManager.Delete(filter);
             return res;
         }
-        public int Delete<TEntity>(TEntity entity) where TEntity : class
+        public override int Delete<TEntity>(TEntity entity)
         {
             this.Parameters.Clear();
             this.ConnectionManager.SetConnectionString(OperationType.Write);
@@ -256,6 +278,76 @@ namespace CoffeeSql.Core.DbContexts
             DbCacheManager.Delete(entity);
             return res;
         }
+
+        public override async Task<int> AddAsync<TEntity>(TEntity entity)
+        {
+            PropertyDataValidator.Verify<TEntity>(this, entity);
+
+            this.Parameters.Clear();
+            this.ConnectionManager.SetConnectionString(OperationType.Write);
+            this.DbConnection = this.GetDbConnection(this.ConnectionManager.CurrentConnectionString);
+            this.DbCommand.Connection = this.DbConnection;
+            this.DbCommand.CommandType = CommandType.Text;
+            this.CommandTextGenerator.Add(entity);
+            this.TableName = GetTableName<TEntity>();
+
+            this.DBTransaction.SyncCommandTransaction();
+
+            int res = await this.QueryExecutor.ExecuteNonQueryAsync(this);
+            DbCacheManager.Add(entity);
+            return res;
+        }
+        public override async Task<int> UpdateAsync<TEntity>(TEntity entity)
+        {
+            Expression<Func<TEntity, bool>> filter;
+
+            this.Parameters.Clear();
+            this.ConnectionManager.SetConnectionString(OperationType.Write);
+            this.DbConnection = this.GetDbConnection(this.ConnectionManager.CurrentConnectionString);
+            this.DbCommand.Connection = this.DbConnection;
+            this.DbCommand.CommandType = CommandType.Text;
+            this.CommandTextGenerator.Update(entity, out filter);
+            this.TableName = GetTableName<TEntity>();
+
+            this.DBTransaction.SyncCommandTransaction();
+
+            int res = await this.QueryExecutor.ExecuteNonQueryAsync(this);
+            DbCacheManager.Update(entity, filter);
+            return res;
+        }
+        public override async Task<int> DeleteAsync<TEntity>(Expression<Func<TEntity, bool>> filter)
+        {
+            this.Parameters.Clear();
+            this.ConnectionManager.SetConnectionString(OperationType.Write);
+            this.DbConnection = this.GetDbConnection(this.ConnectionManager.CurrentConnectionString);
+            this.DbCommand.Connection = this.DbConnection;
+            this.DbCommand.CommandType = CommandType.Text;
+            this.CommandTextGenerator.Delete(filter);
+            this.TableName = GetTableName<TEntity>();
+
+            this.DBTransaction.SyncCommandTransaction();
+
+            int res = await this.QueryExecutor.ExecuteNonQueryAsync(this);
+            DbCacheManager.Delete(filter);
+            return res;
+        }
+        public override async Task<int> DeleteAsync<TEntity>(TEntity entity)
+        {
+            this.Parameters.Clear();
+            this.ConnectionManager.SetConnectionString(OperationType.Write);
+            this.DbConnection = this.GetDbConnection(this.ConnectionManager.CurrentConnectionString);
+            this.DbCommand.Connection = this.DbConnection;
+            this.DbCommand.CommandType = CommandType.Text;
+            this.CommandTextGenerator.Delete(entity);
+            this.TableName = GetTableName<TEntity>();
+
+            this.DBTransaction.SyncCommandTransaction();
+
+            int res = await this.QueryExecutor.ExecuteNonQueryAsync(this);
+            DbCacheManager.Delete(entity);
+            return res;
+        }
+
         public UpdateNonQueryable<TEntity> Update<TEntity>(Expression<Func<TEntity, object>> columns, TEntity entity) where TEntity : class
         {
             //Reset the command builder to prevent the last query parameter from being reused
@@ -273,24 +365,6 @@ namespace CoffeeSql.Core.DbContexts
 
             return new UpdateNonQueryable<TEntity>(this).Set(columns, entity);
 
-        }
-        public int Update<TEntity>(TEntity entity) where TEntity : class
-        {
-            Expression<Func<TEntity, bool>> filter;
-
-            this.Parameters.Clear();
-            this.ConnectionManager.SetConnectionString(OperationType.Write);
-            this.DbConnection = this.GetDbConnection(this.ConnectionManager.CurrentConnectionString);
-            this.DbCommand.Connection = this.DbConnection;
-            this.DbCommand.CommandType = CommandType.Text;
-            this.CommandTextGenerator.Update(entity, out filter);
-            this.TableName = GetTableName<TEntity>();
-
-            this.DBTransaction.SyncCommandTransaction();
-
-            int res = this.QueryExecutor.ExecuteNonQuery(this);
-            DbCacheManager.Update(entity, filter);
-            return res;
         }
 
         #endregion
@@ -315,6 +389,24 @@ namespace CoffeeSql.Core.DbContexts
             return this.QueryExecutor.ExecuteNonQuery(this);
         }
 
+        public async Task<int> ExecuteSqlAsync(string sqlStatement, params object[] parms)
+        {
+            //Reset the command builder to prevent the last query parameter from being reused
+            this.CommandTextGenerator = CreateCommandTextGenerator();
+            this.CommandTextGenerator.SetSql_Params(sqlStatement, parms);
+            this.CommandTextGenerator.QueryableQuery();
+
+            //Initialize context parameters
+            this.ConnectionManager.SetConnectionString(OperationType.Write);
+            this.DbConnection = this.GetDbConnection(this.ConnectionManager.CurrentConnectionString);
+            this.DbCommand.Connection = this.DbConnection;
+            this.DbCommand.CommandType = CommandType.Text;
+
+            this.DBTransaction.SyncCommandTransaction();
+
+            return await this.QueryExecutor.ExecuteNonQueryAsync(this);
+        }
+
         public StoredProcedureNonQueryable StoredProcedureNonQueryable(string storeProcedureName, params DbParameter[] dbParams)
         {
             //Reset the command builder to prevent the last query parameter from being reused
@@ -337,6 +429,7 @@ namespace CoffeeSql.Core.DbContexts
         #endregion
 
         #region Query API
+
         /// <summary>
         /// SQL Strongly Type Complex Querier
         /// </summary>
@@ -423,8 +516,8 @@ namespace CoffeeSql.Core.DbContexts
 
             if (this.DbConnection.State == ConnectionState.Open)
                 this.DbConnection.Close();
-            //if (this.DbConnection != null)
-            //    this.DbConnection.Dispose();  //连接缓存池中要缓存连接对象，不能在此进行dispose
+            if (this.DbConnection != null)
+                this.DbConnection.Dispose();  
 
             base.Dispose();
         }

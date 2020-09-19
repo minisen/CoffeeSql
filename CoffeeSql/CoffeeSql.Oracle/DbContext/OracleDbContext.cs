@@ -25,26 +25,6 @@ namespace CoffeeSql.Oracle.DbContext
             this.DataBaseName = DataBaseAttribute.GetName(typeof(TDataBase));
         }
 
-        /// <summary>
-        /// Cache DbConnection by connection string
-        /// </summary>
-        private static ConcurrentDictionary<string, DbConnection> _connectionCacheDic = new ConcurrentDictionary<string, DbConnection>();
-
-        /// <summary>
-        /// 獲取當前數據庫連接（oracle支持連接複用配置，進行對象池的優化）
-        /// </summary>
-        /// <param name="connectionString"></param>
-        /// <returns></returns>
-        internal override DbConnection GetDbConnection(string connectionString)
-        {
-            string connStr = connectionString.ToFormativeConnectionString();
-
-            if (!_connectionCacheDic.ContainsKey(connStr))
-                _connectionCacheDic.TryAdd(connStr, CreateDbConnection(connStr));
-
-            return _connectionCacheDic[connStr];
-        }
-
         internal override DbConnection CreateDbConnection(string connectionString)
         {
             return new OracleConnection(connectionString);

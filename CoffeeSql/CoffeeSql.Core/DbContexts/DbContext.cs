@@ -34,6 +34,7 @@ namespace CoffeeSql.Core.DbContexts
         }
 
         #region Database Control
+
         /// <summary>
         /// Database Name
         /// </summary>
@@ -76,6 +77,7 @@ namespace CoffeeSql.Core.DbContexts
         #endregion
 
         #region Cache Control 缓存管理
+
         /// <summary>
         /// 数据库缓存管理器
         /// </summary>
@@ -159,18 +161,21 @@ namespace CoffeeSql.Core.DbContexts
 
         #region Operate Standard API
         public abstract int Add<TEntity>(TEntity entity) where TEntity : class;
-        //public abstract Task AddAsync<TEntity>(TEntity entity) where TEntity : class;
-
-        //public abstract int Update<TEntity>(Expression<Func<TEntity, bool>> filter, Expression<Func<TEntity, object>> columns, TEntity entity) where TEntity : class;
-        //public abstract Task UpdateAsync<TEntity>(Expression<Func<TEntity, bool>> filter, TEntity entity) where TEntity : class;
-
+        public abstract int Update<TEntity>(TEntity entity) where TEntity : class;
+        public abstract int Delete<TEntity>(TEntity entity) where TEntity : class;
         public abstract int Delete<TEntity>(Expression<Func<TEntity, bool>> filter) where TEntity : class;
-        //public abstract Task DeleteAsync<TEntity>(Expression<Func<TEntity, bool>> filter) where TEntity : class;
+
+        public abstract Task<int> AddAsync<TEntity>(TEntity entity) where TEntity : class;
+        public abstract Task<int> UpdateAsync<TEntity>(TEntity entity) where TEntity : class;
+        public abstract Task<int> DeleteAsync<TEntity>(TEntity entity) where TEntity : class;
+        public abstract Task<int> DeleteAsync<TEntity>(Expression<Func<TEntity, bool>> filter) where TEntity : class;
+
         #endregion
 
         public void Dispose()
         {
             GC.SuppressFinalize(this);
         }
+
     }
 }

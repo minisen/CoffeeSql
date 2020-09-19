@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace CoffeeSql.Core.QueryEngine
 {
@@ -33,5 +34,10 @@ namespace CoffeeSql.Core.QueryEngine
         public abstract object ToData();
         public abstract TEntity ToOne<TEntity>() where TEntity : class;
         public abstract List<TEntity> ToList<TEntity>() where TEntity : class;
+
+        public abstract Task<DataSet> ToDataSetAsync();
+        public abstract Task<object> ToDataAsync();
+        public abstract Task<TEntity> ToOneAsync<TEntity>() where TEntity : class;
+        public abstract Task<List<TEntity>> ToListAsync<TEntity>() where TEntity : class;
     }
 }

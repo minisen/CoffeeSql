@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace CoffeeSql.Core.QueryEngine
 {
@@ -70,6 +71,47 @@ namespace CoffeeSql.Core.QueryEngine
             }
 
             return DbContext.QueryExecutor.ExecuteList<TEntity>(DbContext);
+        }
+
+        public override async Task<DataSet> ToDataSetAsync()
+        {
+            if (_isPaging)
+            {
+                DbContext.CommandTextGenerator.SetPage(_pageIndex, _pageSize);
+                DbContext.CommandTextGenerator.QueryablePaging();
+            }
+            else
+            {
+                DbContext.CommandTextGenerator.QueryableQuery();
+            }
+
+            return await DbContext.QueryExecutor.ExecuteDataSetAsync(DbContext);
+        }
+        public override async Task<object> ToDataAsync()
+        {
+            DbContext.CommandTextGenerator.QueryableQuery();
+
+            return await DbContext.QueryExecutor.ExecuteScalarAsync(DbContext);
+        }
+        public override async Task<TEntity> ToOneAsync<TEntity>()
+        {
+            DbContext.CommandTextGenerator.QueryableQuery();
+
+            return await DbContext.QueryExecutor.ExecuteEntityAsync<TEntity>(DbContext);
+        }
+        public override async Task<List<TEntity>> ToListAsync<TEntity>()
+        {
+            if (_isPaging)
+            {
+                DbContext.CommandTextGenerator.SetPage(_pageIndex, _pageSize);
+                DbContext.CommandTextGenerator.QueryablePaging();
+            }
+            else
+            {
+                DbContext.CommandTextGenerator.QueryableQuery();
+            }
+
+            return await DbContext.QueryExecutor.ExecuteListAsync<TEntity>(DbContext);
         }
     }
 }

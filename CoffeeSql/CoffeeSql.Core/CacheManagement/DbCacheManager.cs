@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace CoffeeSql.Core.CacheManagement
 {
@@ -168,6 +169,98 @@ namespace CoffeeSql.Core.CacheManagement
             if (result == null)
             {
                 result = func();
+                DbContext.IsFromCache = false;
+                //3.Cache Query result to Query Cache
+                QueryCacheManager.CacheData(result);
+            }
+
+            return result;
+        }
+
+        internal async Task<List<TEntity>> GetEntitiesAsync<TEntity>(Expression<Func<TEntity, bool>> filter, Func<Task<List<TEntity>>> funcAsync) where TEntity : class
+        {
+            List<TEntity> entities = null;
+
+            //1.Determine whether query data exists in Table Cache, if not, begin to initialize Table Caching Operation
+            if (DbContext.OpenTableCache)
+                entities = TableCacheManager.GetEntitiesFromCache(filter);
+
+            //2.Determine whether query data exists in Query Cache
+            if (DbContext.OpenQueryCache)
+                if (entities == null || !entities.Any())
+                    entities = QueryCacheManager.GetEntitiesFromCache<List<TEntity>>();
+
+            //3.if not in both Table Cache and Query Cache, query data from Query logic 
+            if (entities == null || !entities.Any())
+            {
+                entities = await funcAsync();
+                DbContext.IsFromCache = false;
+                //4.Cache Query result to Query Cache
+                QueryCacheManager.CacheData(entities);
+            }
+
+            return entities;
+        }
+        internal async Task<TEntity> GetEntityAsync<TEntity>(Expression<Func<TEntity, bool>> filter, Func<Task<TEntity>> funcAsync) where TEntity : class
+        {
+            TEntity result = null;
+
+            //1.Determine whether query data exists in Table Cache, if not, begin to initialize Table Caching Operation
+            if (DbContext.OpenTableCache)
+                result = TableCacheManager.GetEntitiesFromCache(filter)?.FirstOrDefault();
+
+            //2.Determine whether query data exists in Query Cache
+            if (DbContext.OpenQueryCache)
+                if (result == null)
+                    result = QueryCacheManager.GetEntitiesFromCache<TEntity>();
+
+            //3.if not in both Table Cache and Query Cache, query data from Query logic 
+            if (result == null || result == default(TEntity))
+            {
+                result = await funcAsync();
+                DbContext.IsFromCache = false;
+                //4.Cache Query result to Query Cache
+                QueryCacheManager.CacheData(result);
+            }
+
+            return result;
+        }
+        internal async Task<long> GetCountAsync<TEntity>(Expression<Func<TEntity, bool>> filter, Func<Task<long>> funcAsync) where TEntity : class
+        {
+            long? result = null;
+
+            //1.Determine whether query data exists in Table Cache, if not, begin to initialize Table Caching Operation
+            if (DbContext.OpenTableCache)
+                result = TableCacheManager.GetEntitiesFromCache(filter)?.Count;
+
+            //2.Determine whether query data exists in Query Cache
+            if (DbContext.OpenQueryCache)
+                if (result == null)
+                    result = QueryCacheManager.GetEntitiesFromCache<long?>();
+
+            //3.if not in both Table Cache and Query Cache, query data from Query logic 
+            if (result == null || result == default(long))
+            {
+                result = await funcAsync();
+                DbContext.IsFromCache = false;
+                //4.Cache Query result to Query Cache
+                QueryCacheManager.CacheData(result);
+            }
+
+            return result ?? default(long);
+        }
+        internal async Task<T> GetObjectAsync<T>(Func<Task<T>> funcAsync) where T : class
+        {
+            T result = null;
+
+            //1.Determine whether query data exists in Query Cache
+            if (DbContext.OpenTableCache)
+                result = QueryCacheManager.GetEntitiesFromCache<T>();
+
+            //2.if not in Query Cache, query data from Query logic 
+            if (result == null)
+            {
+                result = await funcAsync();
                 DbContext.IsFromCache = false;
                 //3.Cache Query result to Query Cache
                 QueryCacheManager.CacheData(result);

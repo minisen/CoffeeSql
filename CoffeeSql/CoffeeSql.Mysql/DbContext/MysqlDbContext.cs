@@ -23,16 +23,6 @@ namespace CoffeeSql.Mysql
             this.DataBaseName = DataBaseAttribute.GetName(typeof(TDataBase));
         }
 
-        /// <summary>
-        /// 獲取當前數據庫連接（mysql不支持連接複用配置，每次返回新的連接對象）
-        /// </summary>
-        /// <param name="connectionString"></param>
-        /// <returns></returns>
-        internal override DbConnection GetDbConnection(string connectionString)
-        {
-            return CreateDbConnection(connectionString);
-        }
-
         internal override DbConnection CreateDbConnection(string connectionString)
         {
             return new MySqlConnection(connectionString);

@@ -29,16 +29,16 @@ namespace CoffeeSql.Core.SqlDataAccess
             return default(int);
         }
 
-        public Task<int> ExecuteNonQueryAsync(SqlDbContext DbContext)
+        public async Task<int> ExecuteNonQueryAsync(SqlDbContext DbContext)
         {
             if (DbContext.OpenRealExecutionSaveToDb)
             {
                 DbContext.ParameterInitializes();
                 DbContext.ConnectionStatusCheck();
-                return DbContext.DbCommand.ExecuteNonQueryAsync();
+                return await DbContext.DbCommand.ExecuteNonQueryAsync();
             }
 
-            return default(Task<int>);
+            return default(int);
         }
         #endregion
 
@@ -54,15 +54,15 @@ namespace CoffeeSql.Core.SqlDataAccess
             return default(object);
         }
 
-        public Task<object> ExecuteScalarAsync(SqlDbContext DbContext)
+        public async Task<object> ExecuteScalarAsync(SqlDbContext DbContext)
         {
             if (DbContext.OpenRealExecutionSaveToDb)
             {
                 DbContext.ParameterInitializes();
                 DbContext.ConnectionStatusCheck();
-                return DbContext.DbCommand.ExecuteScalarAsync();
+                return await DbContext.DbCommand.ExecuteScalarAsync();
             }
-            return default(Task<object>);
+            return default(object);
         }
         #endregion
 
@@ -77,23 +77,19 @@ namespace CoffeeSql.Core.SqlDataAccess
             }
             return default(DbDataReader);
         }
-        public Task<DbDataReader> ExecuteReaderAsync(SqlDbContext DbContext)
+        public async Task<DbDataReader> ExecuteReaderAsync(SqlDbContext DbContext)
         {
             if (DbContext.OpenRealExecutionSaveToDb)
             {
                 DbContext.ParameterInitializes();
                 DbContext.ConnectionStatusCheck();
-                return DbContext.DbCommand.ExecuteReaderAsync(CommandBehavior.CloseConnection);
+                return await DbContext.DbCommand.ExecuteReaderAsync(CommandBehavior.CloseConnection);
             }
-            return default(Task<DbDataReader>);
+            return default(DbDataReader);
         }
         #endregion
 
-        /// <summary>
-        /// ExecuteDataSet 执行sql语句或者存储过程,返回一个DataSet
-        /// </summary>
-        /// <param name="DbContext"></param>
-        /// <returns></returns>
+        #region ExecuteDataSet 执行sql语句或者存储过程,返回一个DataSet
         public DataSet ExecuteDataSet(SqlDbContext DbContext)
         {
             if (DbContext.OpenRealExecutionSaveToDb)
@@ -106,6 +102,18 @@ namespace CoffeeSql.Core.SqlDataAccess
             }
             return default(DataSet);
         }
+
+        public async Task<DataSet> ExecuteDataSetAsync(SqlDbContext DbContext)
+        {
+            if (DbContext.OpenRealExecutionSaveToDb)
+            {
+                var reader = await ExecuteReaderAsync(DbContext);
+                DataSet ds = await DbDataReaderToDataSetAsync(reader);
+                return ds;
+            }
+            return default(DataSet);
+        }
+        #endregion
 
         #region ExecuteDataTable 执行sql语句或者存储过程,返回一个DataTable
         public DataTable ExecuteDataTable(SqlDbContext DbContext)
@@ -124,39 +132,60 @@ namespace CoffeeSql.Core.SqlDataAccess
 
         public async Task<DataTable> ExecuteDataTableAsync(SqlDbContext DbContext)
         {
-            var reader = await ExecuteReaderAsync(DbContext);
-
-            DataTable dataTable = await DbDataReaderToDataTableAsync(reader);
-
-            return dataTable;
+            if (DbContext.OpenRealExecutionSaveToDb)
+            {
+                DataSet ds = await ExecuteDataSetAsync(DbContext);
+                if (ds != null && ds.Tables != null && ds.Tables.Count > 0)
+                {
+                    return ds.Tables[0];
+                }
+                return default(DataTable);
+            }
+            return default(DataTable);
         }
         #endregion
 
-        /// <summary>
-        /// ExecuteEntity 执行sql语句或者存储过程，返回一个Entity
-        /// </summary>
-        /// <typeparam name="Entity"></typeparam>
-        /// <param name="DbContext"></param>
-        /// <returns></returns>
+        #region ExecuteEntity 执行sql语句或者存储过程，返回一个Entity
         public Entity ExecuteEntity<Entity>(SqlDbContext DbContext) where Entity : class
         {
-            return GetEntityFromDataSet<Entity>(ExecuteDataSet(DbContext));
+            if (DbContext.OpenRealExecutionSaveToDb)
+            {
+                DataSet ds = ExecuteDataSet(DbContext);
+                return GetEntityFromDataSet<Entity>(ds);
+            }
+            return default(Entity);
         }
+
+        public async Task<Entity> ExecuteEntityAsync<Entity>(SqlDbContext DbContext) where Entity : class
+        {
+            if (DbContext.OpenRealExecutionSaveToDb)
+            {
+                DataSet ds = await ExecuteDataSetAsync(DbContext);
+                return GetEntityFromDataSet<Entity>(ds);
+            }
+            return default(Entity);
+        }
+        #endregion
 
         #region ExecuteList Entity 执行sql语句或者存储过程，返回一个List<T>
         public List<Entity> ExecuteList<Entity>(SqlDbContext DbContext) where Entity : class
         {
-            return GetListFromDataSet<Entity>(ExecuteDataSet(DbContext));
+            if (DbContext.OpenRealExecutionSaveToDb)
+            {
+                DataSet ds = ExecuteDataSet(DbContext);
+                return GetListFromDataSet<Entity>(ds);
+            }
+            return default(List<Entity>);
         }
 
         public async Task<List<Entity>> ExecuteListAsync<Entity>(SqlDbContext DbContext) where Entity : class
         {
-            DataTable dataTable = await ExecuteDataTableAsync(DbContext);
-
-            DataSet dataSet = new DataSet();
-            dataSet.Merge(dataTable);
-
-            return GetListFromDataSet<Entity>(dataSet);
+            if (DbContext.OpenRealExecutionSaveToDb)
+            {
+                DataSet ds = await ExecuteDataSetAsync(DbContext);
+                return GetListFromDataSet<Entity>(ds);
+            }
+            return default(List<Entity>);
 
         }
         #endregion
@@ -186,7 +215,6 @@ namespace CoffeeSql.Core.SqlDataAccess
             }
             return default(Entity);
         }
-
         #endregion
 
         /// <summary>
@@ -194,8 +222,9 @@ namespace CoffeeSql.Core.SqlDataAccess
         /// </summary>
         /// <param name="dataReader"></param>
         /// <returns></returns>
-        private async Task<DataTable> DbDataReaderToDataTableAsync(DbDataReader dataReader)
+        private async Task<DataSet> DbDataReaderToDataSetAsync(DbDataReader dataReader)
         {
+            DataSet ds = new DataSet();
             DataTable dt = new DataTable();
             DataTable schemaTable = dataReader.GetSchemaTable();
 
@@ -225,7 +254,8 @@ namespace CoffeeSql.Core.SqlDataAccess
             }
             dataReader.Close();
             schemaTable = null;
-            return dt;
+            ds.Tables.Add(dt);
+            return ds;
         }
     }
 

@@ -12,12 +12,14 @@ namespace CoffeeSql.Core.ExternalInterface
     public interface IBaseOperate
     {
         int Add<TEntity>(TEntity entity) where TEntity : class;
-        //Task AddAsync<TEntity>(TEntity entity) where TEntity : class;
+        Task<int> AddAsync<TEntity>(TEntity entity) where TEntity : class;
 
-        //int Update<TEntity>(Expression<Func<TEntity, bool>> filter, Expression<Func<TEntity, object>> columns, TEntity entity) where TEntity : class;
-        //Task UpdateAsync<TEntity>(Expression<Func<TEntity, bool>> filter, TEntity entity) where TEntity : class;
+        int Update<TEntity>(TEntity entity) where TEntity : class;
+        Task<int> UpdateAsync<TEntity>(TEntity entity) where TEntity : class;
 
+        int Delete<TEntity>(TEntity entity) where TEntity : class;
+        Task<int> DeleteAsync<TEntity>(TEntity entity) where TEntity : class;
         int Delete<TEntity>(Expression<Func<TEntity, bool>> filter) where TEntity : class;
-        //Task DeleteAsync<TEntity>(Expression<Func<TEntity, bool>> filter) where TEntity : class;
+        Task<int> DeleteAsync<TEntity>(Expression<Func<TEntity, bool>> filter) where TEntity : class;
     }
 }

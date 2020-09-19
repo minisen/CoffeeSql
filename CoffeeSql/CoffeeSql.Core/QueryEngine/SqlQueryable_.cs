@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Data;
 using System.Linq.Expressions;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace CoffeeSql.Core.QueryEngine
 {
@@ -107,7 +108,6 @@ namespace CoffeeSql.Core.QueryEngine
             });
 
         }
-
         public override TEntity ToOne()
         {
             MustExistCheck();
@@ -125,7 +125,6 @@ namespace CoffeeSql.Core.QueryEngine
                 return DbContext.QueryExecutor.ExecuteEntity<TEntity>(this.DbContext);
             });
         }
-
         public override long Count()
         {
             MustExistCheck();
@@ -140,7 +139,6 @@ namespace CoffeeSql.Core.QueryEngine
                 return Convert.ToInt32(DbContext.QueryExecutor.ExecuteScalar(this.DbContext));
             });
         }
-
         public override bool Any()
         {
             MustExistCheck();
@@ -153,6 +151,77 @@ namespace CoffeeSql.Core.QueryEngine
             return DbContext.DbCacheManager.GetCount(_where, () =>
             {
                 return Convert.ToInt32(DbContext.QueryExecutor.ExecuteScalar(this.DbContext));
+            }) > 0;
+        }
+
+        public override async Task<List<TEntity>> ToListAsync()
+        {
+            MustExistCheck();
+            ReSetTableName();
+
+            DbContext.CommandTextGenerator.SetAlias(Alias);
+            DbContext.CommandTextGenerator.SetColumns(_columns);
+            DbContext.CommandTextGenerator.SetWhere(_where);
+            DbContext.CommandTextGenerator.SetOrderBy(_orderby, _isDesc);
+
+            if (_isPaging)
+            {
+                DbContext.CommandTextGenerator.SetPage(_pageIndex, _pageSize);
+                DbContext.CommandTextGenerator.QueryablePaging<TEntity>();
+            }
+            else
+            {
+                DbContext.CommandTextGenerator.QueryableQuery<TEntity>();
+            }
+
+            return await DbContext.DbCacheManager.GetEntitiesAsync(_where, async () =>
+            {
+                return await DbContext.QueryExecutor.ExecuteListAsync<TEntity>(this.DbContext);
+            });
+        }
+        public override async Task<TEntity> ToOneAsync()
+        {
+            MustExistCheck();
+            ReSetTableName();
+
+            DbContext.CommandTextGenerator.SetAlias(Alias);
+            DbContext.CommandTextGenerator.SetColumns(_columns);
+            DbContext.CommandTextGenerator.SetWhere(_where);
+            DbContext.CommandTextGenerator.SetOrderBy(_orderby, _isDesc);
+            Limit(1);
+            DbContext.CommandTextGenerator.QueryableQuery<TEntity>();
+
+            return await DbContext.DbCacheManager.GetEntityAsync(_where, async () =>
+            {
+                return await DbContext.QueryExecutor.ExecuteEntityAsync<TEntity>(this.DbContext);
+            });
+        }
+        public override async Task<long> CountAsync()
+        {
+            MustExistCheck();
+            ReSetTableName();
+
+            DbContext.CommandTextGenerator.SetAlias(Alias);
+            DbContext.CommandTextGenerator.SetWhere(_where);
+            DbContext.CommandTextGenerator.QueryableCount<TEntity>();
+
+            return await DbContext.DbCacheManager.GetCountAsync(_where, async () =>
+            {
+                return Convert.ToInt32(await DbContext.QueryExecutor.ExecuteScalarAsync(this.DbContext));
+            });
+        }
+        public override async Task<bool> AnyAsync()
+        {
+            MustExistCheck();
+            ReSetTableName();
+
+            DbContext.CommandTextGenerator.SetAlias(Alias);
+            DbContext.CommandTextGenerator.SetWhere(_where);
+            DbContext.CommandTextGenerator.QueryableAny<TEntity>(); //内部 Limit(1)
+
+            return await DbContext.DbCacheManager.GetCountAsync(_where, async () =>
+            {
+                return Convert.ToInt32(await DbContext.QueryExecutor.ExecuteScalarAsync(this.DbContext));
             }) > 0;
         }
     }

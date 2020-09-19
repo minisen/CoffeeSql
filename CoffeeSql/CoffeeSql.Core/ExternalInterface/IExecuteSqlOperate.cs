@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace CoffeeSql.Core.ExternalInterface
 {
@@ -10,5 +11,6 @@ namespace CoffeeSql.Core.ExternalInterface
     public interface IExecuteSqlOperate
     {
         int ExecuteSql(string sqlStatement, params object[] parms);
+        Task<int> ExecuteSqlAsync(string sqlStatement, params object[] parms);
     }
 }
